@@ -1,0 +1,7 @@
+{
+  "SpaStack": {
+    "S3BucketName": "spastack-websitebucket75c24d94-vsxg9i6tkiky",
+    "CloudFrontDomainName": "d3cm8349so6jga.cloudfront.net",
+    "S3WebsiteURL": "http://spastack-websitebucket75c24d94-vsxg9i6tkiky.s3-website-ap-southeast-2.amazonaws.com"
+  }
+}

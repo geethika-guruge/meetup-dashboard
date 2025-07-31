@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Page not found - SPA Dashboard">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Page Not Found - SPA Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Additional error page specific styles -->
+    <style>
+        .error-container {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .error-code {
+            font-size: 6rem;
+            font-weight: 700;
+            color: #e74c3c;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .error-message {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .error-description {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+        
+        .error-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+        
+        @media (min-width: 768px) {
+            .error-code {
+                font-size: 8rem;
+            }
+            
+            .error-actions {
+                flex-direction: row;
+                gap: 1.5rem;
+            }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            .btn {
+                transition: none;
+            }
+            
+            .btn:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>SPA Dashboard</h1>
+            <p>Interactive Data Visualization</p>
+        </nav>
+    </header>
+
+    <main>
+        <section class="error-container">
+            <div class="error-icon">🔍</div>
+            <div class="error-code">404</div>
+            <h2 class="error-message">Page Not Found</h2>
+            <p class="error-description">
+                Sorry, the page you're looking for doesn't exist. It might have been moved, deleted, or you entered the wrong URL.
+            </p>
+            
+            <div class="error-actions">
+                <a href="/" class="btn">Go to Homepage</a>
+                <button onclick="history.back()" class="btn btn-secondary">Go Back</button>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2>What can you do?</h2>
+            <p>
+                You can return to our homepage to explore the interactive dashboard with data visualizations, 
+                or use the navigation above to find what you're looking for.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SPA Dashboard. Deployed with AWS CloudFront and S3.</p>
+    </footer>
+
+    <script>
+        // Log 404 errors for analytics (if needed)
+        console.warn('404 Error: Page not found -', window.location.href);
+        
+        // Optional: Send error to analytics service
+        // if (typeof gtag !== 'undefined') {
+        //     gtag('event', 'page_not_found', {
+        //         'page_location': window.location.href,
+        //         'page_title': document.title
+        //     });
+        // }
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sample SPA with interactive charts and data visualization">
+    <meta name="keywords" content="charts, data visualization, dashboard, analytics">
+    <meta name="author" content="SPA Dashboard">
+    <title>SPA Dashboard - Data Visualization</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>SPA Dashboard</h1>
+            <p>Interactive Data Visualization</p>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>Welcome to Your Data Dashboard</h2>
+            <p>Explore interactive charts and visualizations below</p>
+        </section>
+
+        <section class="charts-container">
+            <div class="chart-grid">
+                <!-- Line Chart Section -->
+                <article class="chart-section">
+                    <header>
+                        <h3>Time Series Data</h3>
+                        <p>Monthly trends and patterns</p>
+                    </header>
+                    <div class="chart-wrapper">
+                        <canvas id="lineChart" aria-label="Line chart showing time series data"></canvas>
+                    </div>
+                </article>
+
+                <!-- Bar Chart Section -->
+                <article class="chart-section">
+                    <header>
+                        <h3>Category Comparison</h3>
+                        <p>Performance across different categories</p>
+                    </header>
+                    <div class="chart-wrapper">
+                        <canvas id="barChart" aria-label="Bar chart showing category comparison data"></canvas>
+                    </div>
+                </article>
+
+                <!-- Pie Chart Section -->
+                <article class="chart-section">
+                    <header>
+                        <h3>Distribution Analysis</h3>
+                        <p>Percentage breakdown of key metrics</p>
+                    </header>
+                    <div class="chart-wrapper">
+                        <canvas id="pieChart" aria-label="Pie chart showing distribution data"></canvas>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2>About This Dashboard</h2>
+            <p>This single page application demonstrates modern web technologies deployed on AWS infrastructure. The charts above are powered by Chart.js and display sample data for visualization purposes.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SPA Dashboard. Deployed with AWS CloudFront and S3.</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
