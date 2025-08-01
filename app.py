@@ -5,16 +5,16 @@ from spa_stack import SpaStack
 # Initialize CDK app
 app = cdk.App()
 
+import os
+
 # Create the SPA stack with tags and metadata for resource identification
 spa_stack = SpaStack(
     app, 
-    "SpaStack",
+    "MeetupDashboardStack",
     description="Single Page Application with S3 and CloudFront",
     env=cdk.Environment(
-        # Use default account and region from AWS profile
-        # The sandpit-1-admin profile will be specified during deployment
-        account=None,  # Will use profile's account
-        region=None    # Will use profile's region
+        account=os.environ.get('CDK_DEFAULT_ACCOUNT'),
+        region=os.environ.get('CDK_DEFAULT_REGION')
     )
 )
 

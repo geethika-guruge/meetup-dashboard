@@ -6,8 +6,13 @@ from aws_cdk import (
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_iam as iam,
+    aws_lambda as _lambda,
+    aws_apigateway as apigateway,
+    aws_secretsmanager as secretsmanager,
     RemovalPolicy,
+    Tags,
 )
+import json
 from constructs import Construct
 
 
@@ -15,6 +20,9 @@ class SpaStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        
+        # Add DoNotNuke tag to all resources in this stack
+        Tags.of(self).add("DoNotNuke", "True")
 
         # Create S3 bucket for static website hosting
         self.website_bucket = s3.Bucket(
@@ -118,7 +126,7 @@ class SpaStack(Stack):
             self, "CloudFrontDomainName",
             value=self.distribution.distribution_domain_name,
             description="CloudFront Distribution Domain Name",
-            export_name="SpaStack-CloudFrontDomainName"
+            export_name="MeetupDashboardStack-CloudFrontDomainName"
         )
 
         # Output the S3 bucket name for reference
@@ -126,7 +134,7 @@ class SpaStack(Stack):
             self, "S3BucketName",
             value=self.website_bucket.bucket_name,
             description="S3 Bucket Name for Static Website",
-            export_name="SpaStack-S3BucketName"
+            export_name="MeetupDashboardStack-S3BucketName"
         )
 
         # Output the S3 website URL for reference
@@ -134,5 +142,82 @@ class SpaStack(Stack):
             self, "S3WebsiteURL",
             value=self.website_bucket.bucket_website_url,
             description="S3 Static Website URL",
-            export_name="SpaStack-S3WebsiteURL"
+            export_name="MeetupDashboardStack-S3WebsiteURL"
+        )
+
+        # Create secret for Meetup credentials with placeholder values
+        meetup_secret = secretsmanager.Secret(
+            self, "MeetupCredentials",
+            secret_name="meetup-dashboard/credentials",
+            description="Meetup API credentials for dashboard application",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template=json.dumps({
+                    "MEETUP_CLIENT_ID": "placeholder",
+                    "MEETUP_CLIENT_SECRET": "placeholder",
+                    "MEETUP_ACCESS_TOKEN": "placeholder",
+                    "MEETUP_PRO_URLNAME": "aws-user-groups-new-zealand"
+                }),
+                generate_string_key="placeholder"
+            )
+        )
+
+        # Create Lambda function for Meetup API
+        self.meetup_lambda = _lambda.Function(
+            self, "MeetupApiFunction",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="lambda_function.lambda_handler",
+            code=_lambda.Code.from_asset(".", exclude=["cdk.out", "*.pyc", "__pycache__", "meetup-api"]),
+            timeout=Duration.seconds(30),
+            environment={
+                "MEETUP_SECRET_NAME": meetup_secret.secret_name
+            }
+        )
+        
+        # Grant Lambda permission to read the secret
+        meetup_secret.grant_read(self.meetup_lambda)
+
+        # Create API Gateway
+        self.api = apigateway.RestApi(
+            self, "MeetupApi",
+            rest_api_name="Meetup Dashboard API",
+            default_cors_preflight_options=apigateway.CorsOptions(
+                allow_origins=apigateway.Cors.ALL_ORIGINS,
+                allow_methods=apigateway.Cors.ALL_METHODS,
+                allow_headers=["Content-Type", "Authorization"]
+            )
+        )
+
+        # Create Lambda integration
+        lambda_integration = apigateway.LambdaIntegration(self.meetup_lambda)
+
+        # Add API Gateway resource and method
+        meetup_resource = self.api.root.add_resource("meetup")
+        meetup_resource.add_method("POST", lambda_integration)
+
+        # Create Lambda function for group details
+        self.group_details_lambda = _lambda.Function(
+            self, "GroupDetailsFunction",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="group_details_function.lambda_handler",
+            code=_lambda.Code.from_asset(".", exclude=["cdk.out", "*.pyc", "__pycache__", "meetup-api"]),
+            timeout=Duration.seconds(30),
+            environment={
+                "MEETUP_SECRET_NAME": meetup_secret.secret_name
+            }
+        )
+        
+        # Grant Lambda permission to read the secret
+        meetup_secret.grant_read(self.group_details_lambda)
+
+        # Add group details resource and method
+        group_details_resource = self.api.root.add_resource("group-details")
+        group_details_integration = apigateway.LambdaIntegration(self.group_details_lambda)
+        group_details_resource.add_method("POST", group_details_integration)
+
+        # Output API Gateway URL
+        CfnOutput(
+            self, "ApiGatewayUrl",
+            value=self.api.url,
+            description="API Gateway URL for Meetup integration",
+            export_name="MeetupDashboardStack-ApiGatewayUrl"
         )

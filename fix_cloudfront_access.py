@@ -12,7 +12,7 @@ def main():
     s3_client = session.client('s3')
     cloudfront_client = session.client('cloudfront')
     
-    bucket_name = "spastack-websitebucket75c24d94-vsxg9i6tkiky"
+    bucket_name = "meetupdashboardstack-websitebucket75c24d94-swaanamht61e"
     
     # Get CloudFront distributions
     try:
@@ -21,7 +21,7 @@ def main():
         # Find our distribution
         distribution_id = None
         for dist in distributions['DistributionList']['Items']:
-            if 'd3cm8349so6jga.cloudfront.net' in dist['DomainName']:
+            if 'd3v4cmrs8nlzk6.cloudfront.net' in dist['DomainName']:
                 distribution_id = dist['Id']
                 break
         

@@ -3,80 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sample SPA with interactive charts and data visualization">
-    <meta name="keywords" content="charts, data visualization, dashboard, analytics">
-    <meta name="author" content="SPA Dashboard">
-    <title>SPA Dashboard - Data Visualization</title>
+    <meta name="description" content="AWS User Group Dashboard - Connect with AWS communities worldwide">
+    <meta name="keywords" content="AWS, user groups, community, meetup, dashboard">
+    <meta name="author" content="AWS User Group Dashboard">
+    <title>AWS User Group Dashboard</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <h1>SPA Dashboard</h1>
-            <p>Interactive Data Visualization</p>
-        </nav>
-    </header>
-
-    <main>
-        <section class="hero">
-            <h2>Welcome to Your Data Dashboard</h2>
-            <p>Explore interactive charts and visualizations below</p>
-        </section>
-
-        <section class="charts-container">
-            <div class="chart-grid">
-                <!-- Line Chart Section -->
-                <article class="chart-section">
-                    <header>
-                        <h3>Time Series Data</h3>
-                        <p>Monthly trends and patterns</p>
-                    </header>
-                    <div class="chart-wrapper">
-                        <canvas id="lineChart" aria-label="Line chart showing time series data"></canvas>
-                    </div>
-                </article>
-
-                <!-- Bar Chart Section -->
-                <article class="chart-section">
-                    <header>
-                        <h3>Category Comparison</h3>
-                        <p>Performance across different categories</p>
-                    </header>
-                    <div class="chart-wrapper">
-                        <canvas id="barChart" aria-label="Bar chart showing category comparison data"></canvas>
-                    </div>
-                </article>
-
-                <!-- Pie Chart Section -->
-                <article class="chart-section">
-                    <header>
-                        <h3>Distribution Analysis</h3>
-                        <p>Percentage breakdown of key metrics</p>
-                    </header>
-                    <div class="chart-wrapper">
-                        <canvas id="pieChart" aria-label="Pie chart showing distribution data"></canvas>
-                    </div>
-                </article>
+    <div class="aws-container">
+        <header class="aws-header">
+            <div class="header-content">
+                <div class="aws-logo">
+                    <svg width="40" height="24" viewBox="0 0 40 24" fill="currentColor">
+                        <path d="M10.5 15.25c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5zm0-7.5c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/>
+                        <path d="M29.5 15.25c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5zm0-7.5c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/>
+                        <path d="M20 19.25c-4.1 0-7.5-3.4-7.5-7.5s3.4-7.5 7.5-7.5 7.5 3.4 7.5 7.5-3.4 7.5-7.5 7.5zm0-13.5c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z"/>
+                    </svg>
+                </div>
+                <div class="header-text">
+                    <h1>AWS User Group Dashboard</h1>
+                    <p class="header-subtitle">Connect with AWS communities worldwide</p>
+                </div>
             </div>
-        </section>
+        </header>
 
-        <section class="content-section">
-            <h2>About This Dashboard</h2>
-            <p>This single page application demonstrates modern web technologies deployed on AWS infrastructure. The charts above are powered by Chart.js and display sample data for visualization purposes.</p>
-        </section>
-    </main>
+        <main class="aws-main">
+            <section class="aws-card analytics-card">
+                <div class="card-header">
+                    <h3>Meetup Overview</h3>
+                    <button id="fetchMeetupData" class="aws-button primary">Load Data</button>
+                </div>
+                <div id="meetupResults" class="analytics-content"></div>
+            </section>
 
-    <footer>
-        <p>&copy; 2024 SPA Dashboard. Deployed with AWS CloudFront and S3.</p>
-    </footer>
+            <section class="aws-card groups-card">
+                <div class="card-header">
+                    <h3>User Groups</h3>
+                </div>
+                <div id="groupsResults" class="groups-content"></div>
+            </section>
+        </main>
+
+        <footer class="aws-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 Geethika Guruge. This project is open source — <a href="https://opensource.org/licenses/MIT" target="_blank">MIT License</a>.</p>
+                <div class="footer-links">
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Support</a>
+                </div>
+            </div>
+        </footer>
+    </div>
 
     <!-- JavaScript -->
     <script src="script.js"></script>
