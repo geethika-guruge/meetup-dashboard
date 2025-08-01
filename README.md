@@ -1,6 +1,6 @@
-# Meetup Dashboard
+# AWS User Group Dashboard
 
-A modern Single Page Application (SPA) deployed on AWS using CloudFront and S3, featuring interactive data visualizations and responsive design.
+A modern web application deployed on AWS using CloudFront, S3, Lambda, and API Gateway, featuring real-time Meetup data integration and responsive design.
 
 ## 🚀 Live Demo
 
@@ -8,12 +8,12 @@ A modern Single Page Application (SPA) deployed on AWS using CloudFront and S3, 
 
 ## 📋 Overview
 
-This project demonstrates a complete AWS-based web application deployment featuring:
+This project demonstrates a complete AWS serverless web application featuring:
 
-- **Interactive Dashboard**: Three different chart types (Line, Bar, Pie) using Chart.js
-- **Responsive Design**: Mobile-first approach with CSS Grid and Flexbox
-- **AWS Infrastructure**: CloudFront CDN + S3 static website hosting
-- **Performance Optimized**: Intelligent caching strategies and edge delivery
+- **Real-time Meetup Integration**: Fetches live data from Meetup.com API via AWS Lambda
+- **Interactive Dashboard**: Displays user group analytics and detailed group information
+- **Responsive Design**: Mobile-first approach with modern CSS
+- **AWS Serverless Architecture**: CloudFront + S3 + Lambda + API Gateway
 - **Infrastructure as Code**: AWS CDK for reproducible deployments
 
 ## 🏗️ Architecture
@@ -25,59 +25,64 @@ This project demonstrates a complete AWS-based web application deployment featur
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │
          ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   API Gateway   │────│   Lambda         │────│   Meetup API    │
+│   (REST API)    │    │   Functions      │    │   (GraphQL)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │
+         ▼
 ┌─────────────────┐
-│   Edge Locations│
-│   (Global CDN)  │
+│   Secrets       │
+│   Manager       │
 └─────────────────┘
 ```
 
 ## 📊 Features
 
-### Interactive Charts
-- **Line Chart**: Time-series data showing website traffic and revenue trends
-- **Bar Chart**: Performance comparison across different product categories  
-- **Pie Chart**: Traffic source distribution with percentage breakdown
+### Meetup Integration
+- **Live Data**: Real-time fetching from Meetup.com GraphQL API
+- **Group Analytics**: Total countries, groups, and members
+- **Group Details**: Individual group information with event history
+- **Event Data**: Past events with RSVP counts and details
 
 ### Responsive Design
 - **Mobile**: Single column layout with touch-friendly interactions
-- **Tablet**: Two-column grid layout optimized for medium screens
-- **Desktop**: Three-column grid layout for optimal viewing experience
-- **Accessibility**: High contrast mode and reduced motion support
+- **Tablet**: Optimized layout for medium screens
+- **Desktop**: Full-featured layout with expandable group details
+- **Accessibility**: High contrast support and semantic HTML
 
-### Performance & Caching
-- **HTML Files**: 5-minute cache (frequent content updates)
-- **CSS/JS Files**: 1-day cache (performance optimization)
-- **Images/Assets**: 7-day cache (maximum performance)
-- **Global CDN**: Sub-second response times worldwide
+### Performance & Security
+- **CDK Infrastructure**: Automated deployment and configuration
+- **Secrets Management**: Secure API credential storage
+- **CORS Support**: Proper cross-origin resource sharing
+- **Error Handling**: Graceful fallbacks and user feedback
 
 ## 🛠️ Technology Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Charts**: Chart.js library
+- **Backend**: AWS Lambda (Python 3.9)
 - **Infrastructure**: AWS CDK (Python)
-- **Services**: Amazon CloudFront, Amazon S3
-- **Deployment**: AWS CLI, Python scripts
+- **Services**: CloudFront, S3, API Gateway, Lambda, Secrets Manager
+- **API**: Meetup.com GraphQL API
 
 ## 📁 Project Structure
 
 ```
 meetup-dashboard/
-├── .kiro/specs/spa-cloudfront-s3/    # Project specifications
-│   ├── requirements.md               # Feature requirements
-│   ├── design.md                    # Technical design
-│   └── tasks.md                     # Implementation tasks
 ├── index.html                       # Main HTML file
 ├── styles.css                       # Responsive CSS styles
-├── script.js                        # Chart.js integration
+├── script.js                        # Frontend JavaScript
 ├── error.html                       # Error page
 ├── favicon.svg                      # Site favicon
-├── spa_stack.py                     # AWS CDK stack definition
 ├── app.py                          # CDK app entry point
-├── deploy_assets.py                 # Asset deployment script
-├── fix_cloudfront_access.py         # CloudFront access fix utility
-├── validation_report.md             # End-to-end validation results
-├── cdk-outputs.json                 # CDK deployment outputs
-└── requirements.txt                 # Python dependencies
+├── spa_stack.py                    # AWS CDK stack definition
+├── lambda_function.py              # Main Lambda function
+├── group_details_function.py       # Group details Lambda
+├── deploy_assets.py                # Asset deployment script
+├── requirements.txt                # Python dependencies
+├── cdk.json                        # CDK configuration
+├── cdk-outputs.json               # CDK deployment outputs
+└── README.md                      # This file
 ```
 
 ## 🚀 Quick Start
@@ -90,86 +95,75 @@ meetup-dashboard/
 
 ### Deployment Steps
 
-1. **Clone the repository**
+1. **Clone and setup**
    ```bash
-   git clone https://github.com/[username]/meetup-dashboard.git
+   git clone <repository-url>
    cd meetup-dashboard
-   ```
-
-2. **Set up Python environment**
-   ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
-3. **Deploy infrastructure**
+2. **Deploy infrastructure**
    ```bash
    cdk deploy --profile your-aws-profile
    ```
 
-4. **Upload static assets**
+3. **Upload static assets**
    ```bash
+   # Option 1: Python script
    python deploy_assets.py
+   
+   # Option 2: Shell script with profile support
+   ./deploy_static.sh your-aws-profile
    ```
+
+4. **Configure Meetup credentials** (optional)
+   ```bash
+   # Interactive script to update credentials
+   ./update_secret.sh your-aws-profile
+   ```
+   - Secret name: `meetup-dashboard/credentials`
+   - Required fields: `MEETUP_CLIENT_ID`, `MEETUP_CLIENT_SECRET`, `MEETUP_ACCESS_TOKEN`, `MEETUP_PRO_URLNAME`
 
 5. **Access your application**
    - Check `cdk-outputs.json` for the CloudFront URL
    - Visit the URL to see your deployed dashboard
 
-## 📈 Performance Metrics
-
-- **Response Time**: ~0.113 seconds average
-- **Cache Hit Rate**: >90% for static assets
-- **Lighthouse Score**: 95+ (Performance, Accessibility, Best Practices)
-- **Global Availability**: 99.99% uptime via CloudFront
-
 ## 🔧 Configuration
 
+### AWS Resources Created
+- **S3 Bucket**: Static website hosting with public read access
+- **CloudFront Distribution**: Global CDN with optimized caching
+- **Lambda Functions**: Two functions for Meetup API integration
+- **API Gateway**: REST API for Lambda function access
+- **Secrets Manager**: Secure storage for Meetup API credentials
+
 ### Cache Behaviors
-The application uses optimized caching strategies:
+- **HTML files**: 5-minute cache for content updates
+- **CSS/JS files**: 1-day cache for performance
+- **Images**: 7-day cache for optimal performance
 
-```python
-# HTML files - frequent updates
-cache_policy = CachePolicy(
-    default_ttl=Duration.minutes(5),
-    max_ttl=Duration.hours(1)
-)
+## 🧪 API Endpoints
 
-# CSS/JS files - performance balance  
-cache_policy = CachePolicy(
-    default_ttl=Duration.days(1),
-    max_ttl=Duration.days(7)
-)
-```
+- **POST /meetup**: Fetch overall Meetup analytics and group list
+- **POST /group-details**: Get detailed information for a specific group
 
-### Security Features
-- HTTPS enforcement (HTTP → HTTPS redirect)
-- Origin Access Control for S3 bucket security
-- Proper CORS headers
-- Content Security Policy headers
+Both endpoints support CORS and return JSON responses.
 
-## 🧪 Testing & Validation
+## 🔒 Security Features
 
-The project includes comprehensive end-to-end validation:
+- **HTTPS Enforcement**: All traffic redirected to HTTPS
+- **Secrets Management**: API credentials stored securely
+- **CORS Configuration**: Proper cross-origin access control
+- **IAM Roles**: Least-privilege access for Lambda functions
 
-- ✅ CloudFront distribution serves content correctly
-- ✅ All three charts render properly with sample data
-- ✅ Responsive design works across all screen sizes
-- ✅ Caching behavior optimized for performance
-- ✅ Security headers and HTTPS enforcement
+## 📈 Performance
 
-See `validation_report.md` for detailed test results.
-
-## 📝 Development Process
-
-This project was built using a spec-driven development approach:
-
-1. **Requirements Gathering**: Defined user stories and acceptance criteria
-2. **Technical Design**: Architected AWS infrastructure and frontend components
-3. **Implementation Planning**: Created detailed task breakdown
-4. **Iterative Development**: Built features incrementally with testing
-5. **End-to-End Validation**: Comprehensive functionality verification
+- **Global CDN**: Sub-second response times worldwide
+- **Optimized Caching**: Different TTLs for different content types
+- **Serverless Architecture**: Automatic scaling and high availability
+- **Lightweight Frontend**: Minimal JavaScript, no external frameworks
 
 ## 🤝 Contributing
 
@@ -181,17 +175,13 @@ This project was built using a spec-driven development approach:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- Chart.js for the excellent charting library
 - AWS CDK team for the infrastructure-as-code framework
+- Meetup.com for providing the GraphQL API
 - The open-source community for inspiration and best practices
-
-## 📞 Support
-
-For questions or support, please open an issue in the GitHub repository.
 
 ---
 

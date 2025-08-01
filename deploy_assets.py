@@ -244,14 +244,14 @@ def main():
     print(f"CloudFront Domain: {cloudfront_domain}")
     print()
     
-    # Initialize S3 client with sandpit-1-admin profile
+    # Initialize S3 client with sandpit-2-admin profile
     try:
-        session = boto3.Session(profile_name='sandpit-1-admin')
+        session = boto3.Session(profile_name='sandpit-2-admin')
         s3_client = session.client('s3')
-        print("✓ AWS session initialized with sandpit-1-admin profile")
+        print("✓ AWS session initialized with sandpit-2-admin profile")
     except Exception as e:
         print(f"✗ Error initializing AWS session: {str(e)}")
-        print("Please ensure AWS CLI is configured with sandpit-1-admin profile")
+        print("Please ensure AWS CLI is configured with sandpit-2-admin profile")
         return False
     
     # Files to upload with their S3 keys

@@ -34,6 +34,25 @@ class SpaStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,  # For development/testing
             auto_delete_objects=True  # Clean up objects when stack is deleted
         )
+        
+        # Add bucket policy to allow uploads from current account
+        self.website_bucket.add_to_resource_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                principals=[iam.AccountRootPrincipal()],
+                actions=["s3:PutObject", "s3:PutObjectAcl", "s3:GetObject", "s3:DeleteObject"],
+                resources=[f"{self.website_bucket.bucket_arn}/*"]
+            )
+        )
+        
+        self.website_bucket.add_to_resource_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                principals=[iam.AccountRootPrincipal()],
+                actions=["s3:ListBucket"],
+                resources=[self.website_bucket.bucket_arn]
+            )
+        )
 
         # Create S3 origin using static website hosting
         s3_origin = origins.S3StaticWebsiteOrigin(self.website_bucket)
@@ -152,10 +171,10 @@ class SpaStack(Stack):
             description="Meetup API credentials for dashboard application",
             generate_secret_string=secretsmanager.SecretStringGenerator(
                 secret_string_template=json.dumps({
-                    "MEETUP_CLIENT_ID": "placeholder",
+                    "MEETUP_CLIENT_ID": "Meetup-Dashboard",
                     "MEETUP_CLIENT_SECRET": "placeholder",
                     "MEETUP_ACCESS_TOKEN": "placeholder",
-                    "MEETUP_PRO_URLNAME": "aws-user-groups-new-zealand"
+                    "MEETUP_PRO_URLNAME": "placeholder"
                 }),
                 generate_string_key="placeholder"
             )
