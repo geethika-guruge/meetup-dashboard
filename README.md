@@ -119,12 +119,16 @@ meetup-dashboard/
 
 3. **Upload static assets**
    ```bash
-   # Option 1: Python script
+   # Recommended: Python script with verification (production)
    python scripts/deploy_assets.py
    
-   # Option 2: Shell script with profile support
+   # Alternative: Shell script for quick deployments (development)
    ./scripts/deploy_static.sh your-aws-profile
    ```
+   
+   **Script Comparison:**
+   - **deploy_assets.py**: Full verification, proper content-types, cache headers, accessibility testing
+   - **deploy_static.sh**: Lightweight, fast, minimal dependencies
 
 4. **Configure Meetup credentials** (optional)
    ```bash
@@ -139,6 +143,28 @@ meetup-dashboard/
    - Visit the URL to see your deployed dashboard
 
 ## 🔧 Configuration
+
+### Deployment Scripts
+
+Two deployment options are available for uploading static assets:
+
+#### deploy_assets.py (Recommended)
+- **Use case**: Production deployments and thorough testing
+- **Features**:
+  - Comprehensive verification (S3 and CloudFront accessibility)
+  - Proper content-type detection and cache headers
+  - Detailed error handling and logging
+  - Temporary public access management for testing
+  - HTTP status verification
+- **Dependencies**: Python with boto3 and requests
+
+#### deploy_static.sh
+- **Use case**: Quick deployments during development
+- **Features**:
+  - Simple and lightweight
+  - Fast execution
+  - AWS profile support
+- **Dependencies**: AWS CLI only
 
 ### AWS Resources Created
 - **S3 Bucket**: Static website hosting with public read access
