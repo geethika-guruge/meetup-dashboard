@@ -256,11 +256,11 @@ def main():
     
     # Files to upload with their S3 keys
     files_to_upload = [
-        ('index.html', 'index.html'),
-        ('styles.css', 'styles.css'),
-        ('script.js', 'script.js'),
-        ('error.html', 'error.html'),
-        ('favicon.svg', 'favicon.svg'),
+        ('src/web/index.html', 'index.html'),
+        ('src/web/styles.css', 'styles.css'),
+        ('src/web/script.js', 'script.js'),
+        ('src/web/error.html', 'error.html'),
+        ('src/web/favicon.svg', 'favicon.svg'),
     ]
     
     print(f"\nUploading {len(files_to_upload)} files to S3...")

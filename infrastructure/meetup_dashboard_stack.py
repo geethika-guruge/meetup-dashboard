@@ -16,7 +16,7 @@ import json
 from constructs import Construct
 
 
-class SpaStack(Stack):
+class MeetupDashboardStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -185,7 +185,7 @@ class SpaStack(Stack):
             self, "MeetupApiFunction",
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="lambda_function.lambda_handler",
-            code=_lambda.Code.from_asset(".", exclude=["cdk.out", "*.pyc", "__pycache__", "meetup-api"]),
+            code=_lambda.Code.from_asset("src/lambda"),
             timeout=Duration.seconds(30),
             environment={
                 "MEETUP_SECRET_NAME": meetup_secret.secret_name
@@ -218,7 +218,7 @@ class SpaStack(Stack):
             self, "GroupDetailsFunction",
             runtime=_lambda.Runtime.PYTHON_3_9,
             handler="group_details_function.lambda_handler",
-            code=_lambda.Code.from_asset(".", exclude=["cdk.out", "*.pyc", "__pycache__", "meetup-api"]),
+            code=_lambda.Code.from_asset("src/lambda"),
             timeout=Duration.seconds(30),
             environment={
                 "MEETUP_SECRET_NAME": meetup_secret.secret_name

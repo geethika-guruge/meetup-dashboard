@@ -69,20 +69,28 @@ This project demonstrates a complete AWS serverless web application featuring:
 
 ```
 meetup-dashboard/
-├── index.html                       # Main HTML file
-├── styles.css                       # Responsive CSS styles
-├── script.js                        # Frontend JavaScript
-├── error.html                       # Error page
-├── favicon.svg                      # Site favicon
-├── app.py                          # CDK app entry point
-├── spa_stack.py                    # AWS CDK stack definition
-├── lambda_function.py              # Main Lambda function
-├── group_details_function.py       # Group details Lambda
-├── deploy_assets.py                # Asset deployment script
-├── requirements.txt                # Python dependencies
-├── cdk.json                        # CDK configuration
-├── cdk-outputs.json               # CDK deployment outputs
-└── README.md                      # This file
+├── src/                            # Source code
+│   ├── web/                        # Frontend web assets
+│   │   ├── index.html             # Main HTML file
+│   │   ├── styles.css             # Responsive CSS styles
+│   │   ├── script.js              # Frontend JavaScript
+│   │   ├── error.html             # Error page
+│   │   └── favicon.svg            # Site favicon
+│   └── lambda/                     # Lambda function code
+│       ├── lambda_function.py      # Main Lambda function
+│       └── group_details_function.py # Group details Lambda
+├── infrastructure/                 # CDK infrastructure code
+│   └── meetup_dashboard_stack.py   # AWS CDK stack definition
+├── scripts/                        # Deployment scripts
+│   ├── deploy_assets.py           # Asset deployment script
+│   ├── deploy_static.sh           # Shell deployment script
+│   └── update_secret.sh           # Secret management script
+├── app.py                         # CDK app entry point
+├── requirements.txt               # Python dependencies
+├── cdk.json                       # CDK configuration
+├── cdk-outputs.json              # CDK deployment outputs
+├── PROJECT_STRUCTURE.md          # Project structure documentation
+└── README.md                     # This file
 ```
 
 ## 🚀 Quick Start
@@ -112,16 +120,16 @@ meetup-dashboard/
 3. **Upload static assets**
    ```bash
    # Option 1: Python script
-   python deploy_assets.py
+   python scripts/deploy_assets.py
    
    # Option 2: Shell script with profile support
-   ./deploy_static.sh your-aws-profile
+   ./scripts/deploy_static.sh your-aws-profile
    ```
 
 4. **Configure Meetup credentials** (optional)
    ```bash
    # Interactive script to update credentials
-   ./update_secret.sh your-aws-profile
+   ./scripts/update_secret.sh your-aws-profile
    ```
    - Secret name: `meetup-dashboard/credentials`
    - Required fields: `MEETUP_CLIENT_ID`, `MEETUP_CLIENT_SECRET`, `MEETUP_ACCESS_TOKEN`, `MEETUP_PRO_URLNAME`
