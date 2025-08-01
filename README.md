@@ -2,10 +2,6 @@
 
 A modern web application deployed on AWS using CloudFront, S3, Lambda, and API Gateway, featuring real-time Meetup data integration and responsive design.
 
-## 🚀 Live Demo
-
-**CloudFront URL**: https://d3cm8349so6jga.cloudfront.net
-
 ## 📋 Overview
 
 This project demonstrates a complete AWS serverless web application featuring:
