@@ -2,6 +2,7 @@ from aws_cdk import (
     Stack,
     Duration,
     CfnOutput,
+    Fn,
     aws_s3 as s3,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
@@ -67,6 +68,7 @@ class MeetupDashboardStack(Stack):
         )
         
         # Import certificate from the certificate stack (us-east-1)
+        # Note: Cross-region imports are not supported, so we use the hardcoded ARN
         certificate_arn = "arn:aws:acm:us-east-1:610251782643:certificate/a227ab55-2bc9-4a2a-a508-a3224e52488a"
         certificate = acm.Certificate.from_certificate_arn(
             self, "ImportedCertificate",
