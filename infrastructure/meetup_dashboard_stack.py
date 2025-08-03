@@ -30,10 +30,11 @@ class MeetupDashboardStack(Stack):
         # Create S3 bucket for static website hosting
         self.website_bucket = s3.Bucket(
             self, "WebsiteBucket",
-            website_index_document="index.html",
-            website_error_document="error.html",
-            public_read_access=True,  # Required for S3StaticWebsiteOrigin
-            block_public_access=s3.BlockPublicAccess.BLOCK_ACLS,
+            # Remove website configuration since we'll use OAC
+            # website_index_document="index.html",
+            # website_error_document="error.html",
+            public_read_access=False,  # Use OAC instead of public access
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,  # Block all public access
             removal_policy=RemovalPolicy.DESTROY,  # For development/testing
             auto_delete_objects=True  # Clean up objects when stack is deleted
         )
@@ -57,46 +58,39 @@ class MeetupDashboardStack(Stack):
             )
         )
 
-        # Domain configuration - temporarily disabled for initial deployment
-        # domain_name = "projects.geethika.dev"
-        # subdomain_path = "meetup-dashboard"
+        # Domain configuration
+        domain_name = "projects.geethika.dev"
+        subdomain_path = "meetup-dashboard"
         
         # Look up the existing hosted zone for geethika.dev
-        # hosted_zone = route53.HostedZone.from_lookup(
-        #     self, "HostedZone",
-        #     domain_name="geethika.dev"
-        # )
+        hosted_zone = route53.HostedZone.from_lookup(
+            self, "HostedZone",
+            domain_name="geethika.dev"
+        )
         
-        # Create SSL certificate for the subdomain in us-east-1 (required for CloudFront)
-        # certificate = acm.Certificate(
-        #     self, "Certificate",
-        #     domain_name=domain_name,
-        #     validation=acm.CertificateValidation.from_dns(hosted_zone),
-        # )
-        
-        # Create a cross-region reference for the certificate
-        # CloudFront requires certificates to be in us-east-1
-        # cross_region_cert = acm.Certificate.from_certificate_arn(
-        #     self, "CrossRegionCertificate",
-        #     certificate_arn=f"arn:aws:acm:us-east-1:{self.account}:{certificate.certificate_arn.split(':')[-1]}"
-        # )
+        # Import certificate from the certificate stack (us-east-1)
+        certificate_arn = "arn:aws:acm:us-east-1:610251782643:certificate/a227ab55-2bc9-4a2a-a508-a3224e52488a"
+        certificate = acm.Certificate.from_certificate_arn(
+            self, "ImportedCertificate",
+            certificate_arn=certificate_arn
+        )
 
-        # Create S3 origin using static website hosting
-        s3_origin = origins.S3StaticWebsiteOrigin(self.website_bucket)
+        # Create S3 origin with Origin Access Control (OAC)
+        s3_origin = origins.S3BucketOrigin(
+            self.website_bucket,
+            origin_path="/meetup-dashboard"  # Serve files from the meetup-dashboard subdirectory
+        )
 
-        # Create CloudFront distribution with S3 origin (without custom domain for now)
-        self.distribution = cloudfront.Distribution(
-            self, "WebsiteDistribution",
-            # domain_names=[domain_name],  # Temporarily disabled
-            # certificate=certificate,     # Temporarily disabled
-            default_behavior=cloudfront.BehaviorOptions(
+        # Create CloudFront distribution with S3 origin (custom domain will be added later)
+        distribution_props = {
+            "default_behavior": cloudfront.BehaviorOptions(
                 origin=s3_origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
             ),
-            additional_behaviors={
+            "additional_behaviors": {
                 # Cache behavior for HTML files - shorter TTL for content updates
                 "*.html": cloudfront.BehaviorOptions(
                     origin=s3_origin,
@@ -148,9 +142,9 @@ class MeetupDashboardStack(Stack):
                     cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
                 ),
             },
-            default_root_object="index.html",
-            comment="SPA CloudFront Distribution",
-            error_responses=[
+            "default_root_object": "index.html",
+            "comment": "Meetup Dashboard CloudFront Distribution",
+            "error_responses": [
                 cloudfront.ErrorResponse(
                     http_status=404,
                     response_http_status=200,
@@ -164,26 +158,36 @@ class MeetupDashboardStack(Stack):
                     ttl=Duration.minutes(5)
                 )
             ]
+        }
+        
+        # Add custom domain if certificate is available
+        if certificate:
+            distribution_props["domain_names"] = [domain_name]
+            distribution_props["certificate"] = certificate
+        
+        self.distribution = cloudfront.Distribution(
+            self, "WebsiteDistribution",
+            **distribution_props
         )
 
-        # Create Route 53 A record pointing to CloudFront distribution (temporarily disabled)
-        # route53.ARecord(
-        #     self, "AliasRecord",
-        #     zone=hosted_zone,
-        #     record_name="projects",
-        #     target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(self.distribution))
-        # )
+        # Create Route 53 A record pointing to CloudFront distribution
+        route53.ARecord(
+            self, "AliasRecord",
+            zone=hosted_zone,
+            record_name="projects",
+            target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(self.distribution))
+        )
 
         # Grant CloudFront access to S3 bucket using Origin Access Control
         # This is automatically handled by S3BucketOrigin with OAC
 
-        # Output the custom domain URL (temporarily disabled)
-        # CfnOutput(
-        #     self, "CustomDomainUrl",
-        #     value=f"https://{domain_name}/{subdomain_path}",
-        #     description="Custom Domain URL for Meetup Dashboard",
-        #     export_name="MeetupDashboardStack-CustomDomainUrl"
-        # )
+        # Output the custom domain URL
+        CfnOutput(
+            self, "CustomDomainUrl",
+            value=f"https://{domain_name}/",
+            description="Custom Domain URL for Meetup Dashboard",
+            export_name="MeetupDashboardStack-CustomDomainUrl"
+        )
 
         # Output the CloudFront domain name for testing
         CfnOutput(
