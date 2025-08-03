@@ -88,10 +88,9 @@ class MeetupDashboardStack(Stack):
         )
 
         # Create S3 origin with Origin Access Control (OAC) for better security
-        # Remove origin_path so files are served from S3 root, accessed via /meetup-dashboard URL path
+        # No origin_path - files are accessed directly from S3 bucket structure
         s3_origin = origins.S3BucketOrigin(
             self.website_bucket
-            # No origin_path - files will be accessed via CloudFront path /meetup-dashboard/
         )
 
         # Create CloudFront distribution with S3 origin (custom domain will be added later)
@@ -99,11 +98,29 @@ class MeetupDashboardStack(Stack):
             "default_behavior": cloudfront.BehaviorOptions(
                 origin=s3_origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                # Use a cache policy that returns 404 for root path access
+                cache_policy=cloudfront.CachePolicy(
+                    self, "RootBlockCachePolicy",
+                    cache_policy_name="RootBlockCachePolicy",
+                    default_ttl=Duration.minutes(5),
+                    max_ttl=Duration.hours(1),
+                    min_ttl=Duration.seconds(0),
+                    query_string_behavior=cloudfront.CacheQueryStringBehavior.none(),
+                    header_behavior=cloudfront.CacheHeaderBehavior.none(),
+                    cookie_behavior=cloudfront.CacheCookieBehavior.none(),
+                ),
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
             ),
             "additional_behaviors": {
+                # Exact path behavior for /meetup-dashboard (maps to /meetup-dashboard/index.html in S3)
+                "/meetup-dashboard": cloudfront.BehaviorOptions(
+                    origin=s3_origin,
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                    allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                    cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
+                ),
                 # Main behavior for /meetup-dashboard/* paths
                 "/meetup-dashboard/*": cloudfront.BehaviorOptions(
                     origin=s3_origin,
@@ -163,17 +180,19 @@ class MeetupDashboardStack(Stack):
                     cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
                 ),
             },
-            # Remove default_root_object since we want /meetup-dashboard to be the entry point
+            "default_root_object": "index.html",  # Serves 404 page for root access
             "comment": "Meetup Dashboard CloudFront Distribution with OAC",
             "error_responses": [
+                # Handle 403 errors by serving the index.html file for the dashboard
                 cloudfront.ErrorResponse(
-                    http_status=404,
+                    http_status=403,
                     response_http_status=200,
                     response_page_path="/meetup-dashboard/index.html",
                     ttl=Duration.minutes(5)
                 ),
+                # Handle 404 errors by serving the index.html file for the dashboard
                 cloudfront.ErrorResponse(
-                    http_status=403,
+                    http_status=404,
                     response_http_status=200,
                     response_page_path="/meetup-dashboard/index.html",
                     ttl=Duration.minutes(5)
