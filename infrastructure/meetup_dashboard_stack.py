@@ -27,13 +27,12 @@ class MeetupDashboardStack(Stack):
         # Add DoNotNuke tag to all resources in this stack
         Tags.of(self).add("DoNotNuke", "True")
 
-        # Create S3 bucket for static website hosting
+        # Create S3 bucket for static hosting with OAC (no public access)
         self.website_bucket = s3.Bucket(
             self, "WebsiteBucket",
-            website_index_document="index.html",
-            website_error_document="error.html",
-            public_read_access=True,  # Required for S3StaticWebsiteOrigin
-            block_public_access=s3.BlockPublicAccess.BLOCK_ACLS,
+            # Remove website hosting configuration for OAC
+            public_read_access=False,  # Use OAC instead of public access
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,  # Block all public access
             removal_policy=RemovalPolicy.DESTROY,  # For development/testing
             auto_delete_objects=True  # Clean up objects when stack is deleted
         )
@@ -74,8 +73,20 @@ class MeetupDashboardStack(Stack):
             certificate_arn=certificate_arn
         )
 
-        # Create S3 origin using static website hosting (temporary - will fix OAC later)
-        s3_origin = origins.S3StaticWebsiteOrigin(
+        # Create Origin Access Control explicitly using L1 construct
+        oac = cloudfront.CfnOriginAccessControl(
+            self, "OriginAccessControl",
+            origin_access_control_config=cloudfront.CfnOriginAccessControl.OriginAccessControlConfigProperty(
+                name="MeetupDashboard-OAC",
+                origin_access_control_origin_type="s3",
+                signing_behavior="always",
+                signing_protocol="sigv4",
+                description="Origin Access Control for Meetup Dashboard S3 bucket"
+            )
+        )
+
+        # Create S3 origin with Origin Access Control (OAC) for better security
+        s3_origin = origins.S3BucketOrigin(
             self.website_bucket,
             origin_path="/meetup-dashboard"  # Serve files from the meetup-dashboard subdirectory
         )
@@ -142,7 +153,7 @@ class MeetupDashboardStack(Stack):
                 ),
             },
             "default_root_object": "index.html",
-            "comment": "Meetup Dashboard CloudFront Distribution",
+            "comment": "Meetup Dashboard CloudFront Distribution with OAC",
             "error_responses": [
                 cloudfront.ErrorResponse(
                     http_status=404,
@@ -167,6 +178,31 @@ class MeetupDashboardStack(Stack):
         self.distribution = cloudfront.Distribution(
             self, "WebsiteDistribution",
             **distribution_props
+        )
+
+        # Use escape hatch to add OAC to the CloudFront distribution
+        cfn_distribution = self.distribution.node.default_child
+        cfn_distribution.add_property_override(
+            "DistributionConfig.Origins.0.OriginAccessControlId",
+            oac.attr_id
+        )
+        
+        # Add dependency to ensure OAC is created before distribution
+        self.distribution.node.add_dependency(oac)
+
+        # Add bucket policy for CloudFront OAC access
+        self.website_bucket.add_to_resource_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                principals=[iam.ServicePrincipal("cloudfront.amazonaws.com")],
+                actions=["s3:GetObject"],
+                resources=[f"{self.website_bucket.bucket_arn}/*"],
+                conditions={
+                    "StringEquals": {
+                        "AWS:SourceArn": f"arn:aws:cloudfront::{self.account}:distribution/{self.distribution.distribution_id}"
+                    }
+                }
+            )
         )
 
         # Create Route 53 A record pointing to CloudFront distribution
