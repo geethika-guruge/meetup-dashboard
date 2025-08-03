@@ -147,9 +147,9 @@ meetup-dashboard/
    - Required fields: `MEETUP_CLIENT_ID`, `MEETUP_CLIENT_SECRET`, `MEETUP_ACCESS_TOKEN`, `MEETUP_PRO_URLNAME`
 
 6. **Access your application**
-   - **Custom Domain**: `https://projects.geethika.dev/meetup-dashboard` (if configured)
-   - **CloudFront**: Check `cdk-outputs.json` for the CloudFront URL + `/meetup-dashboard/`
-   - **S3 Website**: Direct S3 website URL + `/meetup-dashboard/`
+   - **Custom Domain**: `https://projects.geethika.dev/meetup-dashboard`
+   - **CloudFront**: Check `cdk-outputs.json` for the CloudFront URL + `/meetup-dashboard`
+   - **S3 Website**: Direct S3 website URL + `/meetup-dashboard` (not recommended - use CloudFront)
 
 ## 🔧 Configuration
 
