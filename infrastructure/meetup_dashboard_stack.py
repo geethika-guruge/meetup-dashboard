@@ -86,9 +86,10 @@ class MeetupDashboardStack(Stack):
         )
 
         # Create S3 origin with Origin Access Control (OAC) for better security
+        # Remove origin_path so files are served from S3 root, accessed via /meetup-dashboard URL path
         s3_origin = origins.S3BucketOrigin(
-            self.website_bucket,
-            origin_path="/meetup-dashboard"  # Serve files from the meetup-dashboard subdirectory
+            self.website_bucket
+            # No origin_path - files will be accessed via CloudFront path /meetup-dashboard/
         )
 
         # Create CloudFront distribution with S3 origin (custom domain will be added later)
@@ -101,8 +102,16 @@ class MeetupDashboardStack(Stack):
                 cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
             ),
             "additional_behaviors": {
-                # Cache behavior for HTML files - shorter TTL for content updates
-                "*.html": cloudfront.BehaviorOptions(
+                # Main behavior for /meetup-dashboard/* paths
+                "/meetup-dashboard/*": cloudfront.BehaviorOptions(
+                    origin=s3_origin,
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                    allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                    cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
+                ),
+                # Cache behavior for HTML files in meetup-dashboard - shorter TTL for content updates
+                "/meetup-dashboard/*.html": cloudfront.BehaviorOptions(
                     origin=s3_origin,
                     viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                     cache_policy=cloudfront.CachePolicy(
@@ -118,8 +127,8 @@ class MeetupDashboardStack(Stack):
                     allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                     cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
                 ),
-                # Cache behavior for CSS/JS files - longer TTL for performance
-                "*.css": cloudfront.BehaviorOptions(
+                # Cache behavior for CSS/JS files in meetup-dashboard - longer TTL for performance
+                "/meetup-dashboard/*.css": cloudfront.BehaviorOptions(
                     origin=s3_origin,
                     viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                     cache_policy=cloudfront.CachePolicy(
@@ -135,7 +144,7 @@ class MeetupDashboardStack(Stack):
                     allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                     cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
                 ),
-                "*.js": cloudfront.BehaviorOptions(
+                "/meetup-dashboard/*.js": cloudfront.BehaviorOptions(
                     origin=s3_origin,
                     viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                     cache_policy=cloudfront.CachePolicy(
@@ -152,19 +161,19 @@ class MeetupDashboardStack(Stack):
                     cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
                 ),
             },
-            "default_root_object": "index.html",
+            # Remove default_root_object since we want /meetup-dashboard to be the entry point
             "comment": "Meetup Dashboard CloudFront Distribution with OAC",
             "error_responses": [
                 cloudfront.ErrorResponse(
                     http_status=404,
                     response_http_status=200,
-                    response_page_path="/index.html",
+                    response_page_path="/meetup-dashboard/index.html",
                     ttl=Duration.minutes(5)
                 ),
                 cloudfront.ErrorResponse(
                     http_status=403,
                     response_http_status=200,
-                    response_page_path="/index.html",
+                    response_page_path="/meetup-dashboard/index.html",
                     ttl=Duration.minutes(5)
                 )
             ]
@@ -216,10 +225,10 @@ class MeetupDashboardStack(Stack):
         # Grant CloudFront access to S3 bucket using Origin Access Control
         # This is automatically handled by S3BucketOrigin with OAC
 
-        # Output the custom domain URL
+        # Output the custom domain URL with /meetup-dashboard path
         CfnOutput(
             self, "CustomDomainUrl",
-            value=f"https://{domain_name}/",
+            value=f"https://{domain_name}/meetup-dashboard",
             description="Custom Domain URL for Meetup Dashboard",
             export_name="MeetupDashboardStack-CustomDomainUrl"
         )
