@@ -30,11 +30,10 @@ class MeetupDashboardStack(Stack):
         # Create S3 bucket for static website hosting
         self.website_bucket = s3.Bucket(
             self, "WebsiteBucket",
-            # Remove website configuration since we'll use OAC
-            # website_index_document="index.html",
-            # website_error_document="error.html",
-            public_read_access=False,  # Use OAC instead of public access
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,  # Block all public access
+            website_index_document="index.html",
+            website_error_document="error.html",
+            public_read_access=True,  # Required for S3StaticWebsiteOrigin
+            block_public_access=s3.BlockPublicAccess.BLOCK_ACLS,
             removal_policy=RemovalPolicy.DESTROY,  # For development/testing
             auto_delete_objects=True  # Clean up objects when stack is deleted
         )
@@ -75,8 +74,8 @@ class MeetupDashboardStack(Stack):
             certificate_arn=certificate_arn
         )
 
-        # Create S3 origin with Origin Access Control (OAC)
-        s3_origin = origins.S3BucketOrigin(
+        # Create S3 origin using static website hosting (temporary - will fix OAC later)
+        s3_origin = origins.S3StaticWebsiteOrigin(
             self.website_bucket,
             origin_path="/meetup-dashboard"  # Serve files from the meetup-dashboard subdirectory
         )
