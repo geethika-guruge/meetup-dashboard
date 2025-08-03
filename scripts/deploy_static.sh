@@ -13,16 +13,22 @@ if [ -z "$BUCKET" ]; then
   exit 1
 fi
 
-echo "📦 Uploading static content to $BUCKET using profile: $PROFILE..."
+# Subdirectory for the meetup dashboard
+SUBDIRECTORY="meetup-dashboard"
 
-aws s3 cp src/web/index.html s3://$BUCKET/ --content-type "text/html" $PROFILE_ARG && \
-aws s3 cp src/web/styles.css s3://$BUCKET/ --content-type "text/css" $PROFILE_ARG && \
-aws s3 cp src/web/script.js s3://$BUCKET/ --content-type "application/javascript" $PROFILE_ARG && \
-aws s3 cp src/web/error.html s3://$BUCKET/ --content-type "text/html" $PROFILE_ARG && \
-aws s3 cp src/web/favicon.svg s3://$BUCKET/ --content-type "image/svg+xml" $PROFILE_ARG
+echo "📦 Uploading static content to $BUCKET/$SUBDIRECTORY/ using profile: $PROFILE..."
+
+aws s3 cp src/web/index.html s3://$BUCKET/$SUBDIRECTORY/ --content-type "text/html" $PROFILE_ARG && \
+aws s3 cp src/web/styles.css s3://$BUCKET/$SUBDIRECTORY/ --content-type "text/css" $PROFILE_ARG && \
+aws s3 cp src/web/script.js s3://$BUCKET/$SUBDIRECTORY/ --content-type "application/javascript" $PROFILE_ARG && \
+aws s3 cp src/web/error.html s3://$BUCKET/$SUBDIRECTORY/ --content-type "text/html" $PROFILE_ARG && \
+aws s3 cp src/web/favicon.svg s3://$BUCKET/$SUBDIRECTORY/ --content-type "image/svg+xml" $PROFILE_ARG
 
 if [ $? -eq 0 ]; then
-  echo "✅ Static content deployed successfully!"
+  echo "✅ Static content deployed successfully to $SUBDIRECTORY/ subdirectory!"
+  echo "🌐 Your site will be available at:"
+  echo "   CloudFront: https://[cloudfront-domain]/$SUBDIRECTORY/"
+  echo "   Custom Domain: https://projects.geethika.dev/$SUBDIRECTORY/"
 else
   echo "❌ Failed to deploy static content"
   exit 1

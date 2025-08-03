@@ -96,6 +96,7 @@ meetup-dashboard/
 - Python 3.8+ with pip
 - Node.js (for AWS CDK)
 - AWS CDK CLI installed
+- Domain registered (for custom domain setup)
 
 ### Deployment Steps
 
@@ -108,12 +109,23 @@ meetup-dashboard/
    pip install -r requirements.txt
    ```
 
-2. **Deploy infrastructure**
+2. **Set up custom domain (optional but recommended)**
+   ```bash
+   # Set up Route 53 hosted zone for geethika.dev
+   python scripts/setup_route53.py
+   
+   # Follow the instructions to update your domain registrar's name servers
+   # Wait for DNS propagation (up to 48 hours)
+   ```
+   
+   For detailed custom domain setup instructions, see [CUSTOM_DOMAIN_SETUP.md](CUSTOM_DOMAIN_SETUP.md).
+
+3. **Deploy infrastructure**
    ```bash
    cdk deploy --profile your-aws-profile
    ```
 
-3. **Upload static assets**
+4. **Upload static assets**
    ```bash
    # Recommended: Python script with verification (production)
    python scripts/deploy_assets.py
@@ -126,7 +138,7 @@ meetup-dashboard/
    - **deploy_assets.py**: Full verification, proper content-types, cache headers, accessibility testing
    - **deploy_static.sh**: Lightweight, fast, minimal dependencies
 
-4. **Configure Meetup credentials** (optional)
+5. **Configure Meetup credentials** (optional)
    ```bash
    # Interactive script to update credentials
    ./scripts/update_secret.sh your-aws-profile
@@ -134,9 +146,10 @@ meetup-dashboard/
    - Secret name: `meetup-dashboard/credentials`
    - Required fields: `MEETUP_CLIENT_ID`, `MEETUP_CLIENT_SECRET`, `MEETUP_ACCESS_TOKEN`, `MEETUP_PRO_URLNAME`
 
-5. **Access your application**
-   - Check `cdk-outputs.json` for the CloudFront URL
-   - Visit the URL to see your deployed dashboard
+6. **Access your application**
+   - **Custom Domain**: `https://projects.geethika.dev/meetup-dashboard` (if configured)
+   - **CloudFront**: Check `cdk-outputs.json` for the CloudFront URL + `/meetup-dashboard/`
+   - **S3 Website**: Direct S3 website URL + `/meetup-dashboard/`
 
 ## 🔧 Configuration
 

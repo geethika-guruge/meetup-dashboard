@@ -9,6 +9,9 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_apigateway as apigateway,
     aws_secretsmanager as secretsmanager,
+    aws_certificatemanager as acm,
+    aws_route53 as route53,
+    aws_route53_targets as targets,
     RemovalPolicy,
     Tags,
 )
@@ -54,12 +57,38 @@ class MeetupDashboardStack(Stack):
             )
         )
 
+        # Domain configuration - temporarily disabled for initial deployment
+        # domain_name = "projects.geethika.dev"
+        # subdomain_path = "meetup-dashboard"
+        
+        # Look up the existing hosted zone for geethika.dev
+        # hosted_zone = route53.HostedZone.from_lookup(
+        #     self, "HostedZone",
+        #     domain_name="geethika.dev"
+        # )
+        
+        # Create SSL certificate for the subdomain in us-east-1 (required for CloudFront)
+        # certificate = acm.Certificate(
+        #     self, "Certificate",
+        #     domain_name=domain_name,
+        #     validation=acm.CertificateValidation.from_dns(hosted_zone),
+        # )
+        
+        # Create a cross-region reference for the certificate
+        # CloudFront requires certificates to be in us-east-1
+        # cross_region_cert = acm.Certificate.from_certificate_arn(
+        #     self, "CrossRegionCertificate",
+        #     certificate_arn=f"arn:aws:acm:us-east-1:{self.account}:{certificate.certificate_arn.split(':')[-1]}"
+        # )
+
         # Create S3 origin using static website hosting
         s3_origin = origins.S3StaticWebsiteOrigin(self.website_bucket)
 
-        # Create CloudFront distribution with S3 origin
+        # Create CloudFront distribution with S3 origin (without custom domain for now)
         self.distribution = cloudfront.Distribution(
             self, "WebsiteDistribution",
+            # domain_names=[domain_name],  # Temporarily disabled
+            # certificate=certificate,     # Temporarily disabled
             default_behavior=cloudfront.BehaviorOptions(
                 origin=s3_origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -137,8 +166,24 @@ class MeetupDashboardStack(Stack):
             ]
         )
 
+        # Create Route 53 A record pointing to CloudFront distribution (temporarily disabled)
+        # route53.ARecord(
+        #     self, "AliasRecord",
+        #     zone=hosted_zone,
+        #     record_name="projects",
+        #     target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(self.distribution))
+        # )
+
         # Grant CloudFront access to S3 bucket using Origin Access Control
         # This is automatically handled by S3BucketOrigin with OAC
+
+        # Output the custom domain URL (temporarily disabled)
+        # CfnOutput(
+        #     self, "CustomDomainUrl",
+        #     value=f"https://{domain_name}/{subdomain_path}",
+        #     description="Custom Domain URL for Meetup Dashboard",
+        #     export_name="MeetupDashboardStack-CustomDomainUrl"
+        # )
 
         # Output the CloudFront domain name for testing
         CfnOutput(

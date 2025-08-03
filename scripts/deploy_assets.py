@@ -15,12 +15,12 @@ def load_cdk_outputs():
     try:
         with open('cdk-outputs.json', 'r') as f:
             outputs = json.load(f)
-        return outputs['SpaStack']
+        return outputs['MeetupDashboardStack']
     except FileNotFoundError:
         print("Error: cdk-outputs.json not found. Please run 'cdk deploy' first.")
         return None
     except KeyError:
-        print("Error: SpaStack outputs not found in cdk-outputs.json")
+        print("Error: MeetupDashboardStack outputs not found in cdk-outputs.json")
         return None
 
 def get_content_type(file_path):
@@ -117,6 +117,140 @@ def disable_public_read_access(s3_client, bucket_name):
     except Exception as e:
         print(f"✗ Failed to disable public read access: {str(e)}")
         return False
+
+def verify_s3_access_with_subdirectory(s3_client, bucket_name, s3_website_url, cloudfront_domain, subdirectory, custom_domain_url):
+    """Verify files are accessible through S3 static website endpoint and CloudFront with subdirectory"""
+    import requests
+    import time
+    
+    print(f"\nVerifying files are accessible under '{subdirectory}/' prefix...")
+    
+    # Test files to verify
+    test_files = ['index.html', 'styles.css', 'script.js', 'error.html', 'favicon.svg']
+    
+    # Wait a moment for S3 to propagate
+    print("Waiting 5 seconds for S3 to propagate changes...")
+    time.sleep(5)
+    
+    # First, verify files exist in S3 bucket using boto3
+    print(f"\n1. Verifying files exist in S3 bucket: {bucket_name}")
+    s3_files_exist = True
+    for file_name in test_files:
+        try:
+            s3_key = f"{subdirectory}/{file_name}"
+            s3_client.head_object(Bucket=bucket_name, Key=s3_key)
+            print(f"✓ {s3_key} exists in S3 bucket")
+        except Exception as e:
+            print(f"✗ {s3_key} not found in S3 bucket: {str(e)}")
+            s3_files_exist = False
+    
+    # Temporarily enable public read access for S3 website testing
+    print(f"\n2. Temporarily enabling public read access for S3 website testing...")
+    public_access_enabled = enable_public_read_access(s3_client, bucket_name)
+    
+    if public_access_enabled:
+        # Wait for policy to propagate
+        print("Waiting 10 seconds for bucket policy to propagate...")
+        time.sleep(10)
+        
+        # Test S3 website endpoint
+        print(f"\n3. Testing S3 static website endpoint: {s3_website_url}")
+        s3_website_accessible = True
+        for file_name in test_files:
+            try:
+                url = f"{s3_website_url}/{subdirectory}/{file_name}"
+                response = requests.get(url, timeout=10)
+                
+                if response.status_code == 200:
+                    print(f"✓ {file_name} is accessible via S3 website (Status: {response.status_code})")
+                    
+                    # Verify content-type header
+                    content_type = response.headers.get('content-type', 'unknown')
+                    expected_type = get_content_type(file_name)
+                    if expected_type.split(';')[0] in content_type:
+                        print(f"  Content-Type: {content_type} ✓")
+                    else:
+                        print(f"  Content-Type: {content_type} (expected: {expected_type})")
+                        
+                else:
+                    print(f"✗ {file_name} returned status {response.status_code} via S3 website")
+                    s3_website_accessible = False
+                    
+            except requests.RequestException as e:
+                print(f"✗ Error accessing {file_name} via S3 website: {str(e)}")
+                s3_website_accessible = False
+        
+        # Disable public read access after testing
+        print(f"\n4. Disabling public read access (restoring security)...")
+        disable_public_read_access(s3_client, bucket_name)
+    else:
+        s3_website_accessible = False
+        print("Skipping S3 website endpoint test due to policy configuration failure")
+    
+    # Test CloudFront distribution
+    print(f"\n5. Testing CloudFront distribution: https://{cloudfront_domain}")
+    print("Note: CloudFront may take several minutes to serve new content due to caching and propagation")
+    cloudfront_accessible = True
+    for file_name in test_files:
+        try:
+            url = f"https://{cloudfront_domain}/{subdirectory}/{file_name}"
+            response = requests.get(url, timeout=15)
+            
+            if response.status_code == 200:
+                print(f"✓ {file_name} is accessible via CloudFront (Status: {response.status_code})")
+                
+                # Verify content-type header
+                content_type = response.headers.get('content-type', 'unknown')
+                expected_type = get_content_type(file_name)
+                if expected_type.split(';')[0] in content_type:
+                    print(f"  Content-Type: {content_type} ✓")
+                else:
+                    print(f"  Content-Type: {content_type} (expected: {expected_type})")
+                    
+            else:
+                print(f"✗ {file_name} returned status {response.status_code} via CloudFront")
+                if response.status_code == 403:
+                    print(f"  Note: CloudFront may need time to propagate changes or origin access may need configuration")
+                cloudfront_accessible = False
+                
+        except requests.RequestException as e:
+            print(f"✗ Error accessing {file_name} via CloudFront: {str(e)}")
+            cloudfront_accessible = False
+    
+    # Test custom domain if configured
+    custom_domain_accessible = True
+    if custom_domain_url != 'Not configured':
+        print(f"\n6. Testing custom domain: {custom_domain_url}")
+        print("Note: Custom domain may take time to propagate DNS and SSL certificate")
+        for file_name in test_files:
+            try:
+                url = f"{custom_domain_url.rstrip('/')}/{file_name}"
+                response = requests.get(url, timeout=15)
+                
+                if response.status_code == 200:
+                    print(f"✓ {file_name} is accessible via custom domain (Status: {response.status_code})")
+                else:
+                    print(f"✗ {file_name} returned status {response.status_code} via custom domain")
+                    if response.status_code in [403, 502, 503]:
+                        print(f"  Note: Custom domain may need time to propagate DNS and SSL certificate")
+                    custom_domain_accessible = False
+                    
+            except requests.RequestException as e:
+                print(f"✗ Error accessing {file_name} via custom domain: {str(e)}")
+                print(f"  Note: This is expected if DNS hasn't propagated yet")
+                custom_domain_accessible = False
+    
+    # Summary
+    print(f"\n=== Verification Summary ===")
+    print(f"Files exist in S3 bucket: {'✓' if s3_files_exist else '✗'}")
+    print(f"S3 website endpoint accessible: {'✓' if s3_website_accessible else '✗'}")
+    print(f"CloudFront distribution accessible: {'✓' if cloudfront_accessible else '✗'}")
+    if custom_domain_url != 'Not configured':
+        print(f"Custom domain accessible: {'✓' if custom_domain_accessible else '✗ (may need DNS propagation time)'}")
+    
+    # Return True if files exist in S3 and S3 website endpoint works
+    # (CloudFront and custom domain may take time to propagate)
+    return s3_files_exist and s3_website_accessible
 
 def verify_s3_access(s3_client, bucket_name, s3_website_url, cloudfront_domain):
     """Verify files are accessible through S3 static website endpoint and CloudFront"""
@@ -238,32 +372,37 @@ def main():
     bucket_name = outputs['S3BucketName']
     s3_website_url = outputs['S3WebsiteURL']
     cloudfront_domain = outputs['CloudFrontDomainName']
+    custom_domain_url = outputs.get('CustomDomainUrl', 'Not configured')
     
     print(f"S3 Bucket: {bucket_name}")
     print(f"S3 Website URL: {s3_website_url}")
     print(f"CloudFront Domain: {cloudfront_domain}")
+    print(f"Custom Domain URL: {custom_domain_url}")
     print()
     
-    # Initialize S3 client with sandpit-2-admin profile
+    # Initialize S3 client with gg-admin profile
     try:
-        session = boto3.Session(profile_name='sandpit-2-admin')
+        session = boto3.Session(profile_name='gg-admin')
         s3_client = session.client('s3')
-        print("✓ AWS session initialized with sandpit-2-admin profile")
+        print("✓ AWS session initialized with gg-admin profile")
     except Exception as e:
         print(f"✗ Error initializing AWS session: {str(e)}")
-        print("Please ensure AWS CLI is configured with sandpit-2-admin profile")
+        print("Please ensure AWS CLI is configured with gg-admin profile")
         return False
     
-    # Files to upload with their S3 keys
+    # Subdirectory for the meetup dashboard
+    subdirectory = "meetup-dashboard"
+    
+    # Files to upload with their S3 keys (including subdirectory)
     files_to_upload = [
-        ('src/web/index.html', 'index.html'),
-        ('src/web/styles.css', 'styles.css'),
-        ('src/web/script.js', 'script.js'),
-        ('src/web/error.html', 'error.html'),
-        ('src/web/favicon.svg', 'favicon.svg'),
+        ('src/web/index.html', f'{subdirectory}/index.html'),
+        ('src/web/styles.css', f'{subdirectory}/styles.css'),
+        ('src/web/script.js', f'{subdirectory}/script.js'),
+        ('src/web/error.html', f'{subdirectory}/error.html'),
+        ('src/web/favicon.svg', f'{subdirectory}/favicon.svg'),
     ]
     
-    print(f"\nUploading {len(files_to_upload)} files to S3...")
+    print(f"\nUploading {len(files_to_upload)} files to S3 under '{subdirectory}/' prefix...")
     
     # Upload each file
     upload_success = True
@@ -279,16 +418,18 @@ def main():
         print("\n✗ Some files failed to upload")
         return False
     
-    print(f"\n✓ All files uploaded successfully to s3://{bucket_name}")
+    print(f"\n✓ All files uploaded successfully to s3://{bucket_name}/{subdirectory}/")
     
-    # Verify files are accessible
-    verification_success = verify_s3_access(s3_client, bucket_name, s3_website_url, cloudfront_domain)
+    # Verify files are accessible (update verification to use subdirectory)
+    verification_success = verify_s3_access_with_subdirectory(s3_client, bucket_name, s3_website_url, cloudfront_domain, subdirectory, custom_domain_url)
     
     if verification_success:
         print(f"\n✓ Files are accessible and deployment completed successfully!")
         print(f"\nYour website is now available at:")
-        print(f"  S3 Website URL: {s3_website_url}")
-        print(f"  CloudFront URL: https://{cloudfront_domain}")
+        print(f"  S3 Website URL: {s3_website_url}/{subdirectory}/")
+        print(f"  CloudFront URL: https://{cloudfront_domain}/{subdirectory}/")
+        if custom_domain_url != 'Not configured':
+            print(f"  Custom Domain URL: {custom_domain_url}")
         print(f"\nNote: CloudFront may take a few minutes to serve updated content due to caching.")
         return True
     else:
