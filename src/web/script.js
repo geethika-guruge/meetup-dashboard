@@ -28,7 +28,7 @@ function initializeMeetupIntegration() {
         
         try {
             // Use API Gateway endpoint
-            const response = await fetch('https://67hptar2rc.execute-api.ap-southeast-2.amazonaws.com/prod/meetup', {
+            const response = await fetch('https://der8vsst03.execute-api.ap-southeast-2.amazonaws.com/prod/meetup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -162,7 +162,7 @@ function toggleGroupDetails(groupId, index) {
 function fetchGroupDetails(groupId, index) {
     const content = document.getElementById(`content-${index}`);
     
-    fetch('https://67hptar2rc.execute-api.ap-southeast-2.amazonaws.com/prod/group-details', {
+    fetch('https://der8vsst03.execute-api.ap-southeast-2.amazonaws.com/prod/group-details', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

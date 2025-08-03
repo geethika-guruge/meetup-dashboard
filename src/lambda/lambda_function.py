@@ -62,17 +62,17 @@ def lambda_handler(event, context):
             'body': json.dumps({'error': 'Failed to get credentials'})
         }
     
-    client_id = credentials.get('MEETUP_CLIENT_ID')
+    client_id = "meetup-dashboard"  # Hardcoded client ID
     client_secret = credentials.get('MEETUP_CLIENT_SECRET')
     access_token = credentials.get('MEETUP_ACCESS_TOKEN')
     pro_urlname = credentials.get('MEETUP_PRO_URLNAME')
     
-    logger.info(f"Environment variables - Client ID: {'SET' if client_id else 'NOT SET'}")
+    logger.info(f"Environment variables - Client ID: SET (hardcoded)")
     logger.info(f"Environment variables - Client Secret: {'SET' if client_secret else 'NOT SET'}")
     logger.info(f"Environment variables - Access Token: {'SET' if access_token else 'NOT SET'}")
     logger.info(f"Environment variables - Pro URL Name: {pro_urlname if pro_urlname else 'NOT SET'}")
     
-    if not all([client_id, client_secret, access_token, pro_urlname]):
+    if not all([client_secret, access_token, pro_urlname]):
         logger.warning("Missing environment variables, returning mock data")
         mock_data = {
             'success': True,

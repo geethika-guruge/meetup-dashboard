@@ -76,13 +76,13 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Failed to get credentials'})
             }
         
-        client_id = credentials.get('MEETUP_CLIENT_ID')
+        client_id = "meetup-dashboard"  # Hardcoded client ID
         client_secret = credentials.get('MEETUP_CLIENT_SECRET')
         access_token = credentials.get('MEETUP_ACCESS_TOKEN')
         
-        if not client_id or not client_secret or not access_token:
+        if not client_secret or not access_token:
             logger.warning("Missing required credentials in secret, returning mock data")
-            logger.info(f"Credentials status - Client ID: {'SET' if client_id else 'NOT SET'}")
+            logger.info(f"Credentials status - Client ID: SET (hardcoded)")
             logger.info(f"Credentials status - Client Secret: {'SET' if client_secret else 'NOT SET'}")
             logger.info(f"Credentials status - Access Token: {'SET' if access_token else 'NOT SET'}")
             mock_data = {
