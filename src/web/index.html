@@ -36,7 +36,13 @@
             <section class="aws-card analytics-card">
                 <div class="card-header">
                     <h3>Meetup Overview</h3>
-                    <button id="fetchMeetupData" class="aws-button primary">Load Data</button>
+                    <div class="button-group">
+                        <button id="fetchMeetupData" class="aws-button primary">Load Data</button>
+                        <button id="refreshAllData" class="aws-button secondary">Refresh All Data</button>
+                    </div>
+                </div>
+                <div id="refreshWarning" class="warning-message" style="display: none;">
+                    ⚠️ This will refresh all data from Meetup API and may take several minutes to complete.
                 </div>
                 <div id="meetupResults" class="analytics-content"></div>
             </section>

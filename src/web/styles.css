@@ -194,10 +194,37 @@ body {
     border-color: #CC7A00;
 }
 
+.aws-button.secondary {
+    background-color: var(--aws-white);
+    color: var(--aws-orange);
+    border-color: var(--aws-orange);
+}
+
+.aws-button.secondary:hover {
+    background-color: var(--aws-gray-100);
+}
+
 .aws-button:disabled {
     background-color: var(--aws-gray-300);
     color: var(--aws-gray-600);
     cursor: not-allowed;
+}
+
+.button-group {
+    display: flex;
+    gap: var(--spacing-s);
+    align-items: center;
+}
+
+.warning-message {
+    background-color: #FFF8E1;
+    color: #E65100;
+    padding: var(--spacing-m);
+    border-radius: var(--border-radius);
+    border: 1px solid #FFE0B2;
+    margin: var(--spacing-m) var(--spacing-l);
+    font-size: var(--font-size-s);
+    font-weight: 500;
 }
 
 /* Analytics Content */

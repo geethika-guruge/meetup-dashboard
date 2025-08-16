@@ -337,7 +337,7 @@ class MeetupDashboardStack(Stack):
         self.meetup_lambda = _lambda.Function(
             self, "MeetupApiFunction",
             runtime=_lambda.Runtime.PYTHON_3_9,
-            handler="lambda_function.lambda_handler",
+            handler="meetup_analytics_function.lambda_handler",
             code=_lambda.Code.from_asset("src/lambda"),
             timeout=Duration.seconds(30),
             environment={
@@ -405,6 +405,8 @@ class MeetupDashboardStack(Stack):
         self.meetup_group_queue.grant_send_messages(self.query_pro_network_lambda)
         # Grant Lambda permission to write to DynamoDB
         self.meetup_results_table.grant_write_data(self.query_pro_network_lambda)
+        # Grant Lambda permission to scan DynamoDB
+        self.meetup_results_table.grant(self.query_pro_network_lambda, "dynamodb:Scan")
 
         # Add pro network resource and method
         query_pro_network_resource = self.api.root.add_resource("pro-network-details")

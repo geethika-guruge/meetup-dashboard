@@ -1,24 +1,63 @@
 // Meetup Dashboard - Clean version without dummy data
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Meetup functionality
+    console.log('DOM loaded, initializing...');
     initializeMeetupIntegration();
 });
 
 // Meetup API Integration
 function initializeMeetupIntegration() {
     const fetchButton = document.getElementById('fetchMeetupData');
+    const refreshButton = document.getElementById('refreshAllData');
     const resultsDiv = document.getElementById('meetupResults');
+    const warningDiv = document.getElementById('refreshWarning');
+    
+    console.log('Elements found:', {
+        fetchButton: !!fetchButton,
+        refreshButton: !!refreshButton,
+        resultsDiv: !!resultsDiv,
+        warningDiv: !!warningDiv
+    });
     
     if (!fetchButton || !resultsDiv) {
-        console.warn('Meetup elements not found');
+        console.warn('Required meetup elements not found');
         return;
     }
     
+    // Refresh All Data button handler
+    if (refreshButton) {
+        console.log('Adding click handler to refresh button');
+        refreshButton.onclick = function() {
+            console.log('Refresh button clicked!');
+            
+            if (refreshButton.disabled) {
+                console.log('Button disabled, returning');
+                return;
+            }
+            
+            // Show warning
+            if (warningDiv) {
+                console.log('Showing warning');
+                warningDiv.style.display = 'block';
+            }
+            
+            // Confirm action
+            if (!confirm('This will refresh all data from Meetup API and may take several minutes. Continue?')) {
+                console.log('User cancelled');
+                if (warningDiv) warningDiv.style.display = 'none';
+                return;
+            }
+            
+            console.log('User confirmed, calling API...');
+            callRefreshAPI(refreshButton, warningDiv);
+        };
+    } else {
+        console.log('Refresh button not found!');
+    }
+    
+    // Original fetch button handler
     fetchButton.addEventListener('click', async function() {
-        // Prevent multiple clicks
         if (fetchButton.disabled) return;
         
-        // Set loading state
         fetchButton.disabled = true;
         fetchButton.classList.add('loading');
         fetchButton.textContent = 'Fetching Data...';
@@ -27,7 +66,6 @@ function initializeMeetupIntegration() {
         console.log('Fetching Meetup data from Lambda...');
         
         try {
-            // Use API Gateway endpoint
             const response = await fetch('https://der8vsst03.execute-api.ap-southeast-2.amazonaws.com/prod/meetup', {
                 method: 'POST',
                 headers: {
@@ -54,12 +92,49 @@ function initializeMeetupIntegration() {
             console.error('Error fetching Meetup data:', error);
             displayMeetupError(`Network error: ${error.message}`);
         } finally {
-            // Reset button state
             fetchButton.disabled = false;
             fetchButton.classList.remove('loading');
-            fetchButton.textContent = 'Fetch Meetup Data';
+            fetchButton.textContent = 'Load Data';
         }
     });
+}
+
+async function callRefreshAPI(refreshButton, warningDiv) {
+    try {
+        refreshButton.disabled = true;
+        refreshButton.textContent = 'Refreshing...';
+        
+        console.log('Making API call to refresh endpoint');
+        const response = await fetch('https://der8vsst03.execute-api.ap-southeast-2.amazonaws.com/prod/pro-network-details', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+        
+        console.log('Refresh API response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Refresh API response data:', data);
+        
+        if (data.success) {
+            alert('Data refresh initiated successfully! The process may take several minutes to complete.');
+        } else {
+            alert(`Error: ${data.error || 'Failed to initiate data refresh'}`);
+        }
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+        alert(`Network error: ${error.message}`);
+    } finally {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh All Data';
+        if (warningDiv) warningDiv.style.display = 'none';
+    }
 }
 
 function displayMeetupData(data) {
@@ -82,7 +157,6 @@ function displayMeetupData(data) {
         </div>
     `;
     
-    // Display individual groups
     if (data.groups && data.groups.length > 0) {
         displayGroups(data.groups);
     }
@@ -144,16 +218,13 @@ function toggleGroupDetails(groupId, index) {
     const content = document.getElementById(`content-${index}`);
     
     if (detailsRow.style.display === 'none') {
-        // Show details
         detailsRow.style.display = 'table-row';
         icon.textContent = '▼';
         
-        // Fetch group details if not already loaded
         if (content.innerHTML.includes('Loading')) {
             fetchGroupDetails(groupId, index);
         }
     } else {
-        // Hide details
         detailsRow.style.display = 'none';
         icon.textContent = '▶';
     }

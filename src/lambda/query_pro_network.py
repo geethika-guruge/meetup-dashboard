@@ -76,6 +76,52 @@ def graphql_call(access_token, query, variables=None):
         logger.error(f"Unexpected error in GraphQL call: {str(e)}")
         raise Exception(f"GraphQL call failed: {str(e)}")
 
+def clean_dynamodb_table():
+    """Clean all existing data from DynamoDB table."""
+    table_name = os.environ.get('DYNAMODB_TABLE_NAME')
+    if not table_name:
+        logger.warning("DYNAMODB_TABLE_NAME environment variable not set, skipping cleanup")
+        return
+    
+    try:
+        table = dynamodb.Table(table_name)
+        
+        # Scan and delete all items
+        response = table.scan()
+        items = response.get('Items', [])
+        
+        logger.info(f"Found {len(items)} items to delete")
+        
+        # Delete items in batches
+        with table.batch_writer() as batch:
+            for item in items:
+                batch.delete_item(
+                    Key={
+                        'pk': item['pk'],
+                        'sk': item['sk']
+                    }
+                )
+        
+        # Handle pagination if there are more items
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            items = response.get('Items', [])
+            
+            with table.batch_writer() as batch:
+                for item in items:
+                    batch.delete_item(
+                        Key={
+                            'pk': item['pk'],
+                            'sk': item['sk']
+                        }
+                    )
+        
+        logger.info("Successfully cleaned DynamoDB table")
+        
+    except Exception as e:
+        logger.error(f"Error cleaning DynamoDB table: {str(e)}", exc_info=True)
+        raise
+
 def store_results_in_dynamodb(result, pro_urlname):
     """Store query results in DynamoDB using single table design."""
     table_name = os.environ.get('DYNAMODB_TABLE_NAME')
@@ -154,12 +200,29 @@ def lambda_handler(event, context):
     
     logger.info(f"Lambda invoked with event: {json.dumps(event, default=str)}")
     
+    # Handle CORS preflight requests
+    if event.get('httpMethod') == 'OPTIONS':
+        logger.info("Handling CORS preflight request")
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            'body': ''
+        }
+    
     # Get credentials from Secrets Manager
     credentials = get_secret()
     if not credentials:
         logger.error("Failed to get credentials from Secrets Manager")
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
             'body': json.dumps({'error': 'Failed to get credentials'})
         }
     
@@ -170,6 +233,10 @@ def lambda_handler(event, context):
         logger.error("Missing required credentials: access_token or pro_urlname")
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
             'body': json.dumps({'error': 'Missing required credentials'})
         }
 
@@ -213,6 +280,10 @@ def lambda_handler(event, context):
     
     try:
         logger.info(f"Running GraphQL query for pro network: {pro_urlname}")
+        
+        # Clean DynamoDB table first
+        logger.info("Cleaning DynamoDB table before storing new data")
+        clean_dynamodb_table()
         
         # Make the GraphQL call
         result = graphql_call(access_token, query, {"urlname": pro_urlname})
@@ -275,6 +346,10 @@ def lambda_handler(event, context):
         
         return {
             'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
             'body': json.dumps({
                 'success': True,
                 'message': 'Query executed successfully. Check logs for results.',
@@ -289,6 +364,10 @@ def lambda_handler(event, context):
         
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json'
+            },
             'body': json.dumps({
                 'success': False,
                 'error': error_msg
