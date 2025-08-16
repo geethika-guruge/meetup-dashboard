@@ -333,7 +333,22 @@ class MeetupDashboardStack(Stack):
             )
         )
 
-        # Create Lambda function for Meetup API
+        # Create Lambda function to read from DynamoDB
+        self.read_dynamodb_lambda = _lambda.Function(
+            self, "ReadDynamoDBFunction",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="read_dynamodb_function.lambda_handler",
+            code=_lambda.Code.from_asset("src/lambda"),
+            timeout=Duration.seconds(30),
+            environment={
+                "DYNAMODB_TABLE_NAME": self.meetup_results_table.table_name
+            }
+        )
+        
+        # Grant Lambda permission to read from DynamoDB
+        self.meetup_results_table.grant_read_data(self.read_dynamodb_lambda)
+        
+        # Create Lambda function for Meetup API (legacy)
         self.meetup_lambda = _lambda.Function(
             self, "MeetupApiFunction",
             runtime=_lambda.Runtime.PYTHON_3_9,
@@ -359,12 +374,12 @@ class MeetupDashboardStack(Stack):
             )
         )
 
-        # Create Lambda integration
-        lambda_integration = apigateway.LambdaIntegration(self.meetup_lambda)
+        # Create Lambda integration for DynamoDB read
+        dynamodb_integration = apigateway.LambdaIntegration(self.read_dynamodb_lambda)
 
-        # Add API Gateway resource and method
+        # Add API Gateway resource and method for DynamoDB data
         meetup_resource = self.api.root.add_resource("meetup")
-        meetup_resource.add_method("POST", lambda_integration)
+        meetup_resource.add_method("POST", dynamodb_integration)
 
         # Create Lambda function for group details
         self.group_details_lambda = _lambda.Function(
