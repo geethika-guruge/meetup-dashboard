@@ -13,6 +13,8 @@ from aws_cdk import (
     aws_certificatemanager as acm,
     aws_route53 as route53,
     aws_route53_targets as targets,
+    aws_sqs as aws_sqs,
+    aws_dynamodb as dynamodb,
     RemovalPolicy,
     Tags,
 )
@@ -293,6 +295,43 @@ class MeetupDashboardStack(Stack):
                 generate_string_key="placeholder"
             )
         )
+        # Create SQS queue for group IDs
+        self.meetup_group_queue = aws_sqs.Queue(
+            self, "MeetupGroupQueue",
+            queue_name="meetup-group-ids",
+            removal_policy=RemovalPolicy.DESTROY, # For dev/testing
+            visibility_timeout=Duration.seconds(300) 
+        )
+
+        # Create DynamoDB table for storing Lambda results
+        self.meetup_results_table = dynamodb.Table(
+            self, "MeetupResultsTable",
+            table_name="meetup-dashboard-results",
+            partition_key=dynamodb.Attribute(
+                name="pk",
+                type=dynamodb.AttributeType.STRING
+            ),
+            sort_key=dynamodb.Attribute(
+                name="sk", 
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.DESTROY,  # For dev/testing
+            point_in_time_recovery=False  # Disabled for cost optimization
+        )
+
+        # Add GSI for querying by data type and timestamp
+        self.meetup_results_table.add_global_secondary_index(
+            index_name="DataTypeIndex",
+            partition_key=dynamodb.Attribute(
+                name="data_type",
+                type=dynamodb.AttributeType.STRING
+            ),
+            sort_key=dynamodb.Attribute(
+                name="timestamp",
+                type=dynamodb.AttributeType.STRING
+            )
+        )
 
         # Create Lambda function for Meetup API
         self.meetup_lambda = _lambda.Function(
@@ -347,10 +386,75 @@ class MeetupDashboardStack(Stack):
         group_details_integration = apigateway.LambdaIntegration(self.group_details_lambda)
         group_details_resource.add_method("POST", group_details_integration)
 
+        # Create Lambda function to query pro network
+        self.query_pro_network_lambda = _lambda.Function(
+            self, "QueryProNetworkFunction",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="query_pro_network.lambda_handler",
+            code=_lambda.Code.from_asset("src/lambda"),
+            timeout=Duration.seconds(30),
+            environment={
+                "MEETUP_SECRET_NAME": meetup_secret.secret_name,
+                "MEETUP_GROUP_SQS_URL": self.meetup_group_queue.queue_url,
+                "DYNAMODB_TABLE_NAME": self.meetup_results_table.table_name
+            }
+        )
+        # Grant Lambda permission to read the secret
+        meetup_secret.grant_read(self.query_pro_network_lambda)
+        # Grant Lambda permission to send messages to SQS
+        self.meetup_group_queue.grant_send_messages(self.query_pro_network_lambda)
+        # Grant Lambda permission to write to DynamoDB
+        self.meetup_results_table.grant_write_data(self.query_pro_network_lambda)
+
+        # Add pro network resource and method
+        query_pro_network_resource = self.api.root.add_resource("pro-network-details")
+        query_pro_network_integration = apigateway.LambdaIntegration(self.query_pro_network_lambda)
+        query_pro_network_resource.add_method("POST", query_pro_network_integration)
+
+        # Create Lambda function to process group events (triggered by SQS)
+        self.process_group_events_lambda = _lambda.Function(
+            self, "ProcessGroupEventsFunction",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="process_group_events.lambda_handler",
+            code=_lambda.Code.from_asset("src/lambda"),
+            timeout=Duration.seconds(300),  # 5 minutes for processing multiple events
+            environment={
+                "MEETUP_SECRET_NAME": meetup_secret.secret_name,
+                "DYNAMODB_TABLE_NAME": self.meetup_results_table.table_name
+            }
+        )
+        
+        # Grant Lambda permission to read the secret
+        meetup_secret.grant_read(self.process_group_events_lambda)
+        
+        # Grant Lambda permission to receive messages from SQS
+        self.meetup_group_queue.grant_consume_messages(self.process_group_events_lambda)
+        
+        # Grant Lambda permission to write to DynamoDB
+        self.meetup_results_table.grant_write_data(self.process_group_events_lambda)
+        
+        # Add SQS event source to trigger the Lambda
+        from aws_cdk import aws_lambda_event_sources as lambda_event_sources
+        self.process_group_events_lambda.add_event_source(
+            lambda_event_sources.SqsEventSource(
+                self.meetup_group_queue,
+                batch_size=10,  # Process up to 10 messages at once
+                max_batching_window=Duration.seconds(5)  # Wait up to 5 seconds to batch messages
+            )
+        )
+
         # Output API Gateway URL
         CfnOutput(
             self, "ApiGatewayUrl",
             value=self.api.url,
             description="API Gateway URL for Meetup integration",
             export_name="MeetupDashboardStack-ApiGatewayUrl"
+        )
+
+        # Output DynamoDB table name
+        CfnOutput(
+            self, "DynamoDBTableName",
+            value=self.meetup_results_table.table_name,
+            description="DynamoDB table name for storing Lambda results",
+            export_name="MeetupDashboardStack-DynamoDBTableName"
         )

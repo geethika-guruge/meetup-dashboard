@@ -6,5 +6,8 @@
   "hosted-zone:account=610251782643:domainName=geethika.dev:region=us-east-1": {
     "Id": "/hostedzone/Z02976432R3CE4B6YB5N6",
     "Name": "geethika.dev."
-  }
+  },
+  "acknowledged-issue-numbers": [
+    34892
+  ]
 }
