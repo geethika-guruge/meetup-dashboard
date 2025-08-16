@@ -1,0 +1,13 @@
+{
+  "MeetupDashboardNewStack": {
+    "S3WebsiteURLNew": "http://meetupdashboardnewstack-websitebucketnew8346c739-q937tagojra2.s3-website-ap-southeast-2.amazonaws.com",
+    "ApiGatewayUrlNew": "https://32nu868s3h.execute-api.ap-southeast-2.amazonaws.com/prod/",
+    "CustomDomainUrlNew": "https://d284puaiirjlk5.cloudfront.net/meetup-dashboard-new",
+    "S3BucketNameNew": "meetupdashboardnewstack-websitebucketnew8346c739-q937tagojra2",
+    "MeetupSecretArnNew": "arn:aws:secretsmanager:ap-southeast-2:610251782643:secret:meetup-dashboard-new/credentials-Qc8h7D",
+    "DynamoDBTableNameNew": "aws-user-groups-new",
+    "CloudFrontDomainNameNew": "d284puaiirjlk5.cloudfront.net",
+    "MeetupApiNewEndpoint094CBAC1": "https://32nu868s3h.execute-api.ap-southeast-2.amazonaws.com/prod/",
+    "DynamoDBAlarmTopicArnNew": "arn:aws:sns:ap-southeast-2:610251782643:meetup-dashboard-new-dynamodb-alarms"
+  }
+}
